@@ -7,6 +7,7 @@ let detections = [];
 let voice = true;
 let lastSpeech = "";
 let lastSpeechTime = 0;
+let lastPersonCapture = 0;
 const status = document.getElementById("status");
 const YOLO_CLASSES = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"];
 // CAMERA
@@ -132,9 +133,14 @@ function process(output) {
     drawBoxes();
     let objects = detections.map(x => x.label);
     document.getElementById("objects").innerHTML = objects.length ? [...new Set(objects)].join(", ") : "Searching...";
-    if (objects.length) {
-        speak("I see " + [...new Set(objects)].join(", "));
+   if (objects.length) {
+        let uniqueObjects = [...new Set(objects)];
+        speak("I see " + uniqueObjects.join(", "));
         updateChart(objects.length);
+        // AUTO SAVE WHEN PERSON DETECTED
+        if (uniqueObjects.includes("person")) {
+            autoCapturePerson();
+        }
     }
 }
 // DRAW BOXES
@@ -185,6 +191,25 @@ function capture() {
     link.download = "vision.jpg";
     link.href = canvas.toDataURL();
     link.click();
+}
+
+function autoCapturePerson() {
+    let now = Date.now();
+    // wait 10 seconds before capturing again
+    if (now - lastPersonCapture < 10000) {
+        return;
+    }
+    lastPersonCapture = now;
+    let canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    let c = canvas.getContext("2d");
+    c.drawImage(video, 0, 0);
+    let link = document.createElement("a");
+    link.download = "person_" + Date.now() + ".jpg";
+    link.href = canvas.toDataURL("image/jpeg");
+    link.click();
+    speak("Person image saved");
 }
 // DESCRIPTION
 function assistantMode() {
