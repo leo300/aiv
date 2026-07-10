@@ -8,6 +8,9 @@ let voice = true;
 let lastSpeech = "";
 let lastSpeechTime = 0;
 let lastPersonCapture = 0;
+let lastSavedPerson = null;
+let personSaveCooldown = 30000; // 30 seconds
+let lastPersonSaveTime = 0;
 const status = document.getElementById("status");
 const YOLO_CLASSES = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"];
 // CAMERA
@@ -138,8 +141,9 @@ function process(output) {
         speak("I see " + uniqueObjects.join(", "));
         updateChart(objects.length);
         // AUTO SAVE WHEN PERSON DETECTED
-        if (uniqueObjects.includes("person")) {
-            autoCapturePerson();
+        let person = detections.find(x => x.label === "person");
+        if (person) {
+            autoCapturePerson(person);
         }
     }
 }
@@ -193,23 +197,39 @@ function capture() {
     link.click();
 }
 
-function autoCapturePerson() {
+function autoCapturePerson(person) {
     let now = Date.now();
-    // wait 10 seconds before capturing again
-    if (now - lastPersonCapture < 10000) {
+    // cooldown
+    if (now - lastPersonSaveTime < personSaveCooldown) {
         return;
     }
-    lastPersonCapture = now;
+    // compare with previous person position
+    if (lastSavedPerson) {
+        let distance = Math.abs(person.x - lastSavedPerson.x) + Math.abs(person.y - lastSavedPerson.y) + Math.abs(person.w - lastSavedPerson.w) + Math.abs(person.h - lastSavedPerson.h);
+        // same person area -> do not save
+        if (distance < 80) {
+            return;
+        }
+    }
+    // remember this person
+    lastSavedPerson = {
+        x: person.x,
+        y: person.y,
+        w: person.w,
+        h: person.h
+    };
+    lastPersonSaveTime = now;
+    // capture image
     let canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     let c = canvas.getContext("2d");
     c.drawImage(video, 0, 0);
     let link = document.createElement("a");
-    link.download = "person_" + Date.now() + ".jpg";
+    link.download = "new_person_" + Date.now() + ".jpg";
     link.href = canvas.toDataURL("image/jpeg");
     link.click();
-    speak("Person image saved");
+    speak("New person image saved");
 }
 // DESCRIPTION
 function assistantMode() {
