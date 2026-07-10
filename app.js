@@ -83,6 +83,15 @@ function process(output) {
     if (voice) speak("I see " + objects.join(","));
     updateChart(objects.length);
 }
+// SWITCH CAMERA
+async function switchCamera() {
+    if (facingMode === "environment") {
+        facingMode = "user";
+    } else {
+        facingMode = "environment";
+    }
+    await startCamera();
+}
 // VOICE
 function speak(text) {
     let msg = new SpeechSynthesisUtterance(text);
