@@ -5,6 +5,8 @@ let session;
 let detections = [];
 let voice = true;
 let history = [];
+let lastSpeech="";
+let lastSpeechTime=0;
 const status = document.getElementById("status");
 const COCO_CLASSES = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"];
 // CAMERA
@@ -75,13 +77,12 @@ function preprocess() {
 
 function process(output) {
     ctx.clearRect(0, 0, overlay.width, overlay.height);
-    // Real YOLO parsing goes here
-    // output tensor contains boxes
-    // Demo UI update
-    let objects = ["person"];
-    document.getElementById("objects").innerHTML = objects.join(",");
-    if (voice) speak("I see " + objects.join(","));
-    updateChart(objects.length);
+    detections = [];
+    let objects = detections.map(item => item.label);
+    document.getElementById("objects").innerHTML = objects.length ? objects.join(", ") : "Searching...";
+    if (objects.length) {
+        updateChart(objects.length);
+    }
 }
 // SWITCH CAMERA
 async function switchCamera() {
@@ -94,6 +95,14 @@ async function switchCamera() {
 }
 // VOICE
 function speak(text) {
+    if (!voice) return;
+    let now = Date.now();
+    if (text === lastSpeech && now - lastSpeechTime < 5000) {
+        return;
+    }
+    lastSpeech = text;
+    lastSpeechTime = now;
+    speechSynthesis.cancel();
     let msg = new SpeechSynthesisUtterance(text);
     msg.rate = .9;
     speechSynthesis.speak(msg);
@@ -101,6 +110,14 @@ function speak(text) {
 
 function toggleVoice() {
     voice = !voice;
+    let btn = document.querySelector("button[onclick='toggleVoice()']");
+    if (voice) {
+        btn.innerHTML = "🔊 Voice ON";
+        speak("Voice enabled");
+    } else {
+        btn.innerHTML = "🔇 Voice OFF";
+        speechSynthesis.cancel();
+    }
 }
 // SCREENSHOT
 function capture() {
