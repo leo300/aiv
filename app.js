@@ -115,8 +115,22 @@ function capture() {
 }
 // AI DESCRIPTION
 function assistantMode() {
-    let text = "The camera sees " + document.getElementById("objects").innerText;
-    speak(text);
+    let detected = detections.map(x => x.label);
+    if (detected.length === 0) {
+        speak("I cannot see any objects yet");
+        return;
+    }
+    let unique = [...new Set(detected)];
+    let description = "I can see ";
+    if (unique.length === 1) {
+        description += "a " + unique[0];
+    } else {
+        description += unique.slice(0, -1).join(", ");
+        description += " and " + unique.at(-1);
+    }
+    description += ".";
+    speak(description);
+    document.getElementById("objects").innerHTML = description;
 }
 // GRAPH
 let chart = new Chart(document.getElementById("chart"), {
