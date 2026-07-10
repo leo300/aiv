@@ -8,18 +8,36 @@ let history = [];
 const status = document.getElementById("status");
 const COCO_CLASSES = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"];
 // CAMERA
+let facingMode = "environment";
+let currentStream = null;
 async function startCamera() {
-    let stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-            width: 640,
-            height: 640
-        },
-        audio: false
-    });
-    video.srcObject = stream;
-    await video.play();
-    overlay.width = video.videoWidth;
-    overlay.height = video.videoHeight;
+    try {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        currentStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: {
+                    ideal: facingMode
+                },
+                width: {
+                    ideal: 640
+                },
+                height: {
+                    ideal: 640
+                }
+            },
+            audio: false
+        });
+        video.srcObject = currentStream;
+        await video.play();
+        overlay.width = video.videoWidth;
+        overlay.height = video.videoHeight;
+        status.innerHTML = "Camera: " + facingMode;
+    } catch (error) {
+        console.error(error);
+        status.innerHTML = "Camera permission error";
+    }
 }
 // LOAD YOLO
 async function loadAI() {
