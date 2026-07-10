@@ -44,7 +44,9 @@ async function startCamera() {
 // LOAD YOLO
 async function loadAI() {
     session = await ort.InferenceSession.create("models/yolov8n.onnx");
-    status.innerHTML = "✅ YOLOv8 Ready";
+    console.log(session.inputNames);
+    console.log(session.outputNames);
+    status.innerHTML = "✅ Yeady";
     detect();
 }
 // DETECTION LOOP
@@ -77,11 +79,13 @@ function preprocess() {
 
 function process(output) {
     ctx.clearRect(0, 0, overlay.width, overlay.height);
-    detections = [];
+    let result = decodeYOLO(output);
+    detections = result;
     let objects = detections.map(item => item.label);
     document.getElementById("objects").innerHTML = objects.length ? objects.join(", ") : "Searching...";
     if (objects.length) {
         updateChart(objects.length);
+        speak("I see " + [...new Set(objects)].join(", "));
     }
 }
 // SWITCH CAMERA
